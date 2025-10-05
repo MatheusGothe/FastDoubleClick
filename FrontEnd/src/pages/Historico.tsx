@@ -3,7 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ArrowUpDown, Home, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -28,6 +35,9 @@ const Historico = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [loading, setLoading] = useState(true);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+
   useEffect(() => {
     fetchRegistros();
   }, []);
@@ -40,9 +50,9 @@ const Historico = () => {
     try {
       setLoading(true);
       const response = await fetch("http://localhost:3000/registros");
-      
+
       if (!response.ok) throw new Error("Erro ao buscar registros");
-      
+
       const data = await response.json();
       setRegistros(data || []);
     } catch (error) {
@@ -56,6 +66,11 @@ const Historico = () => {
       setLoading(false);
     }
   };
+
+  const totalPages = Math.ceil(filteredRegistros.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRegistros = filteredRegistros.slice(startIndex, endIndex);
 
   const applyFiltersAndSort = () => {
     let filtered = [...registros];
@@ -223,7 +238,7 @@ const Historico = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRegistros.map((registro) => (
+                    {paginatedRegistros.map((registro) => (
                       <TableRow key={registro.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">
                           {format(
@@ -260,6 +275,44 @@ const Historico = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+      <div className="flex align-center justify-center mx-auto">
+        <div className="flex items-center gap-2 mb-4 ">
+          <label className="text-sm font-medium">Itens por página:</label>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1); // reset para a primeira página
+            }}
+            className="border rounded px-2 py-1 bg-secondary sm:text-sm"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2 mb-4">
+          <Button
+            variant="outline"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((prev) => prev - 1)}
+          >
+            Anterior
+          </Button>
+
+          <span>
+            Página {currentPage} de {totalPages}
+          </span>
+
+          <Button
+            variant="outline"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+          >
+            Próxima
+          </Button>
+        </div>
       </div>
     </div>
   );
